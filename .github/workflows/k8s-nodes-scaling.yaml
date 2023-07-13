@@ -1,0 +1,79 @@
+name: Run k8s nodes scaling
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        required: true
+        type: string
+        default: myenv.someid
+        description: "Project with environment, e.g.: myenv.someid"
+      cluster_type:
+        required: true
+        type: string
+        default: "all"
+        description: "Clusters to scale, valid inputs are: all, clustertype1, clustertype2."
+      number_nodes:
+        required: true
+        type: number
+        default: 0
+        description: "Number of nodes to scale per region."
+      k8s_nodes_scaling_stage:
+        required: true
+        type: string
+        default: "plan"
+        description: "Stage for k8s nodes scaling, valid inputs are: plan, apply"
+      
+  workflow_call:
+    inputs:
+      environment:
+        required: true
+        type: string
+        description: "Project with environment, e.g.: myenv.someid"
+      cluster_type:
+        required: true
+        type: string
+        default: "all"
+        description: "Clusters to scale, valid inputs are: all, clustertype1, clustertype2."
+      number_nodes:
+        required: true
+        type: number
+        default: 0
+        description: "Number of nodes to scale per region."
+      k8s_nodes_scaling_stage:
+        required: false
+        type: string
+        default: "apply"
+        description: "Stage for k8s nodes scaling, valid inputs are: plan, apply"
+        
+jobs:
+  k8s-scaling:
+    permissions:
+      contents: read
+      issues: read
+      checks: write
+      pull-requests: write
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - id: 'auth'
+        uses: 'google-github-actions/auth@v1'
+        with:
+          credentials_json: '${{ secrets.GCP_CREDENTIALS }}'
+
+      - name: 'Set up Cloud SDK'
+        uses: 'google-github-actions/setup-gcloud@v1'
+
+      - name: "k8s nodes scaling"
+        run: |
+          PRODUCT_ID=$(echo "${{ inputs.environment }}" | cut -d "." -f2)
+          ENVIRONMENT=$(echo "${{ inputs.environment }}" | cut -d "." -f1)
+          CLUSTER_TYPE=$(echo "${{ inputs.cluster_type }}")
+          NUMBER_NODES=$(echo "${{ inputs.number_nodes}}")
+          export K8S_NODES_SCALING_STAGE="${{ inputs.k8s_nodes_scaling_stage }}"
+          ./.github/scripts/k8s-nodes-scaling.sh $PRODUCT_ID $ENVIRONMENT $CLUSTER_TYPE $NUMBER_NODES          
+
