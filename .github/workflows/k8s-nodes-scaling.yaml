@@ -1,3 +1,4 @@
+run-name: "Running k8s nodes scaling: ${{ github.event.inputs.environment }} (${{ github.event.inputs.cluster_type }} clusters) to ${{ github.event.inputs.number_nodes}} nodes per zone."
 name: Run k8s nodes scaling
 
 on:
@@ -17,7 +18,7 @@ on:
         required: true
         type: number
         default: 0
-        description: "Number of nodes to scale per region."
+        description: "Number of nodes to scale per zone."
       k8s_nodes_scaling_stage:
         required: true
         type: string
@@ -67,6 +68,15 @@ jobs:
 
       - name: 'Set up Cloud SDK'
         uses: 'google-github-actions/setup-gcloud@v1'
+
+      - name: Install gke-gcloud-auth-plugin
+        run: gcloud components install gke-gcloud-auth-plugin --quiet
+      
+      - name: 'Set up Kubectl'
+        run: |
+          curl -LO "https://dl.k8s.io/release/v1.23.0/bin/linux/amd64/kubectl"
+          chmod +x kubectl
+          mv kubectl /usr/local/bin/
 
       - name: "k8s nodes scaling"
         run: |
